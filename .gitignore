@@ -1,0 +1,6 @@
+.superpowers/
+node_modules/
+data/
+exports/
+uploads/
+*.log
