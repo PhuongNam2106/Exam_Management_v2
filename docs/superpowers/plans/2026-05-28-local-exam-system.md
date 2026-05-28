@@ -105,11 +105,11 @@ Responsibilities:
   "dependencies": {
     "exceljs": "^4.4.0",
     "express": "^4.18.3",
-    "multer": "^1.4.5-lts.1",
+    "multer": "^2.1.1",
     "ws": "^8.16.0"
   },
   "devDependencies": {
-    "supertest": "^6.3.4"
+    "supertest": "^7.1.3"
   },
   "engines": {
     "node": ">=24.0.0"
