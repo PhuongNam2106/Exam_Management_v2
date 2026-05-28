@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { config, getLanAddresses } from './config.mjs';
 
@@ -17,8 +18,10 @@ app.get('/api/health', (req, res) => {
 });
 
 const server = http.createServer(app);
+const isDirectExecution =
+  Boolean(process.argv[1]) && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
-if (process.env.NODE_ENV !== 'test') {
+if (isDirectExecution) {
   server.listen(config.port, '0.0.0.0', () => {
     console.log(`Exam server running at http://localhost:${config.port}`);
     for (const url of getLanAddresses()) console.log(`LAN URL: ${url}`);
