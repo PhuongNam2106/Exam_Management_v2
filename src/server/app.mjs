@@ -4,17 +4,21 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { config, getLanAddresses } from './config.mjs';
+import { createDatabase } from './db/database.mjs';
 
 fs.mkdirSync(config.dataDir, { recursive: true });
 fs.mkdirSync(config.uploadDir, { recursive: true });
 fs.mkdirSync(config.exportDir, { recursive: true });
 
+const db = createDatabase(config.databasePath);
 const app = express();
+app.locals.db = db;
 app.use(express.json({ limit: '20mb' }));
 app.use(express.static(path.join(config.rootDir, 'src', 'public')));
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, port: config.port, lanUrls: getLanAddresses() });
+  const schemaVersion = db.prepare("SELECT value FROM settings WHERE key = 'schema_version'").get().value;
+  res.json({ ok: true, port: config.port, schemaVersion, lanUrls: getLanAddresses() });
 });
 
 const server = http.createServer(app);
