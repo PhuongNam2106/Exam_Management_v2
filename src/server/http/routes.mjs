@@ -94,25 +94,40 @@ export function createRoutes(db, runtimeConfig = config) {
       studentId: requiredText(req.body.studentId, 'studentId'),
       fullName: requiredText(req.body.fullName, 'fullName')
     });
+    req.app.locals.realtime.broadcastSession(session.id, 'student.joined', { student });
     res.status(201).json({ session, student });
   });
 
   router.post('/student/answer', (req, res) => {
-    res.json(
-      sessionService.saveAnswer({
-        sessionStudentId: requiredText(req.body.sessionStudentId, 'sessionStudentId'),
-        examCodeItemId: requiredText(req.body.examCodeItemId, 'examCodeItemId'),
-        selectedLabel: requiredText(req.body.selectedLabel, 'selectedLabel').toUpperCase()
-      })
-    );
+    const result = sessionService.saveAnswer({
+      sessionStudentId: requiredText(req.body.sessionStudentId, 'sessionStudentId'),
+      examCodeItemId: requiredText(req.body.examCodeItemId, 'examCodeItemId'),
+      selectedLabel: requiredText(req.body.selectedLabel, 'selectedLabel').toUpperCase()
+    });
+    req.app.locals.realtime.broadcastSession(req.body.sessionId, 'student.answerSaved', {
+      sessionStudentId: req.body.sessionStudentId
+    });
+    res.json(result);
   });
 
   router.post('/student/submit', (req, res) => {
-    res.json(
-      sessionService.submitStudent({
-        sessionStudentId: requiredText(req.body.sessionStudentId, 'sessionStudentId')
-      })
-    );
+    const result = sessionService.submitStudent({
+      sessionStudentId: requiredText(req.body.sessionStudentId, 'sessionStudentId')
+    });
+    req.app.locals.realtime.broadcastSession(req.body.sessionId, 'student.submitted', {
+      sessionStudentId: req.body.sessionStudentId
+    });
+    res.json(result);
+  });
+
+  router.post('/student/violation', (req, res) => {
+    const event = sessions.saveViolation({
+      sessionStudentId: requiredText(req.body.sessionStudentId, 'sessionStudentId'),
+      eventType: requiredText(req.body.eventType, 'eventType'),
+      metadataJson: JSON.stringify(req.body.metadata || {})
+    });
+    req.app.locals.realtime.broadcastSession(requiredText(req.body.sessionId, 'sessionId'), 'student.violation', event);
+    res.status(201).json(event);
   });
 
   router.post(

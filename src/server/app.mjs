@@ -7,6 +7,7 @@ import { config, getLanAddresses } from './config.mjs';
 import { createDatabase } from './db/database.mjs';
 import { createRoutes } from './http/routes.mjs';
 import { createStaticMiddleware } from './http/static.mjs';
+import { createRealtimeHub } from './realtime/hub.mjs';
 
 export function createApp(overrides = {}) {
   const runtimeConfig = { ...config, ...overrides };
@@ -18,6 +19,7 @@ export function createApp(overrides = {}) {
   const app = express();
   app.locals.db = db;
   app.locals.config = runtimeConfig;
+  app.locals.realtime = { broadcastSession() {} };
   app.use(express.json({ limit: '20mb' }));
   app.use(createStaticMiddleware(runtimeConfig));
 
@@ -37,7 +39,9 @@ export function createApp(overrides = {}) {
 
 export function createServer(overrides = {}) {
   const app = createApp(overrides);
-  return { app, server: http.createServer(app) };
+  const server = http.createServer(app);
+  app.locals.realtime = createRealtimeHub(server);
+  return { app, server };
 }
 
 const isDirectExecution =
