@@ -144,6 +144,23 @@ export function createRoutes(db, runtimeConfig = config) {
     res.status(201).json({ session, student });
   });
 
+  router.get('/student/:sessionStudentId/exam', (req, res) => {
+    const rows = sessions.getCodeItemsForStudent(req.params.sessionStudentId);
+    res.json({
+      items: rows.map((row) => ({
+        itemId: row.itemId,
+        displayOrder: row.displayOrder,
+        questionText: row.questionText,
+        options: {
+          A: row.optionAText,
+          B: row.optionBText,
+          C: row.optionCText,
+          D: row.optionDText
+        }
+      }))
+    });
+  });
+
   router.post('/student/answer', (req, res) => {
     const result = sessionService.saveAnswer({
       sessionStudentId: requiredText(req.body.sessionStudentId, 'sessionStudentId'),

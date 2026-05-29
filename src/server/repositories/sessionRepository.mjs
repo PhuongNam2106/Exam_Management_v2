@@ -91,10 +91,18 @@ export function createSessionRepository(db) {
       return db
         .prepare(`
           SELECT eci.id AS itemId, eci.display_order AS displayOrder,
+                 q.question_text AS questionText,
                  eci.option_a_id AS A, eci.option_b_id AS B, eci.option_c_id AS C, eci.option_d_id AS D,
+                 oa.option_text AS optionAText, ob.option_text AS optionBText,
+                 oc.option_text AS optionCText, od.option_text AS optionDText,
                  qo.id AS correctOptionId
           FROM session_students ss
           JOIN exam_code_items eci ON eci.exam_code_id = ss.exam_code_id
+          JOIN questions q ON q.id = eci.question_id
+          JOIN question_options oa ON oa.id = eci.option_a_id
+          JOIN question_options ob ON ob.id = eci.option_b_id
+          JOIN question_options oc ON oc.id = eci.option_c_id
+          JOIN question_options od ON od.id = eci.option_d_id
           JOIN question_options qo ON qo.question_id = eci.question_id AND qo.is_correct = 1
           WHERE ss.id = ?
           ORDER BY eci.display_order ASC

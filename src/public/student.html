@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sinh vien - Exam Management</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+  </head>
+  <body>
+    <main class="app-shell student-shell">
+      <section id="joinPanel" class="login-panel">
+        <div>
+          <p class="eyebrow">Exam Management</p>
+          <h1>Vao phong thi</h1>
+        </div>
+        <label>Ma phong <input id="roomCode" inputmode="numeric" autocomplete="off"></label>
+        <label>Ma sinh vien <input id="studentId" autocomplete="username"></label>
+        <label>Ho ten <input id="fullName" autocomplete="name"></label>
+        <button id="joinButton" type="button">Vao phong</button>
+        <p id="joinError" class="error" role="alert"></p>
+      </section>
+
+      <section id="waitPanel" class="panel hidden">
+        <div class="panel-title">
+          <h1>Cho bat dau</h1>
+          <span id="waitStatus" class="status"></span>
+        </div>
+        <button id="fullscreenButton" type="button">Vao toan man hinh</button>
+      </section>
+
+      <section id="examPanel" class="hidden">
+        <header class="toolbar exam-toolbar">
+          <div>
+            <p class="eyebrow">Bai thi</p>
+            <h1 id="examTitle">Dang lam bai</h1>
+          </div>
+          <p id="statusText" class="status">Online</p>
+        </header>
+        <div id="warning" class="panel error hidden" role="alert"></div>
+        <form id="questionList" class="question-list"></form>
+        <div class="submit-bar">
+          <button id="submitButton" type="button" class="success">Nop bai</button>
+        </div>
+      </section>
+
+      <section id="submittedPanel" class="panel hidden">
+        <p class="eyebrow">Da nop bai</p>
+        <h1>Bai lam da duoc ghi nhan</h1>
+        <p id="submitResult" class="status"></p>
+      </section>
+    </main>
+    <script type="module" src="/assets/student/student.js"></script>
+  </body>
+</html>

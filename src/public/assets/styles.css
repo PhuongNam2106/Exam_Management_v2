@@ -189,6 +189,66 @@ a { color: var(--primary); }
   margin-top: 16px;
 }
 
+.student-shell {
+  max-width: 920px;
+}
+
+.exam-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 12px 0;
+  background: var(--bg);
+}
+
+.question-list {
+  display: grid;
+  gap: 14px;
+}
+
+.question-card {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--surface);
+}
+
+.question-card legend {
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #e1e7ef;
+  border-radius: 6px;
+  background: #fbfcfe;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.option-row input {
+  width: auto;
+  min-height: auto;
+  margin: 0;
+}
+
+.submit-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 0 0;
+  background: var(--bg);
+}
+
 .table-wrap {
   overflow-x: auto;
 }
