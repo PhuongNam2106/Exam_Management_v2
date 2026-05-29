@@ -21,6 +21,13 @@ export function createSessionRepository(db) {
           .get(roomCode) || null
       );
     },
+    getSessionById(sessionId) {
+      return (
+        db
+          .prepare('SELECT id, exam_id AS examId, room_code AS roomCode, status, duration_minutes AS durationMinutes, started_at AS startedAt, ends_at AS endsAt FROM exam_sessions WHERE id = ?')
+          .get(sessionId) || null
+      );
+    },
     joinStudent({ sessionId, studentId, fullName }) {
       const existing = db
         .prepare('SELECT id, session_id AS sessionId, student_id AS studentId, full_name AS fullName, exam_code_id AS examCodeId, status FROM session_students WHERE session_id = ? AND student_id = ?')
@@ -49,7 +56,7 @@ export function createSessionRepository(db) {
           LEFT JOIN violation_events ve ON ve.session_student_id = ss.id
           WHERE ss.session_id = ?
           GROUP BY ss.id
-          ORDER BY ss.joined_at ASC
+          ORDER BY ss.joined_at ASC, ss.student_id ASC
         `)
         .all(sessionId);
     },
@@ -57,6 +64,11 @@ export function createSessionRepository(db) {
       const id = createId('code');
       db.prepare('INSERT INTO exam_codes(id, session_id, code) VALUES (?, ?, ?)').run(id, sessionId, code);
       return { id, sessionId, code };
+    },
+    listExamCodes(sessionId) {
+      return db
+        .prepare('SELECT id, session_id AS sessionId, code FROM exam_codes WHERE session_id = ? ORDER BY code ASC')
+        .all(sessionId);
     },
     addExamCodeItem({ examCodeId, questionId, displayOrder, optionIds }) {
       const id = createId('item');
