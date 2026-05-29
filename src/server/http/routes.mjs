@@ -8,6 +8,7 @@ import { issueTeacherToken, verifyTeacherPassword } from '../services/authServic
 import { createCatalogRepository } from '../repositories/catalogRepository.mjs';
 import { createExamRepository } from '../repositories/examRepository.mjs';
 import { createSessionRepository } from '../repositories/sessionRepository.mjs';
+import { writeResultsWorkbook } from '../services/excelExportService.mjs';
 import { readQuestionRowsFromWorkbook, validateQuestionRows } from '../services/excelImportService.mjs';
 import { createSessionService } from '../services/sessionService.mjs';
 import { optionLabel, positiveInteger, requiredText } from '../services/validation.mjs';
@@ -126,6 +127,17 @@ export function createRoutes(db, runtimeConfig = config) {
 
   router.post('/sessions/:sessionId/end', requireTeacher, (req, res) => {
     res.json(sessionService.endSession(req.params.sessionId));
+  });
+
+  router.get('/sessions/:sessionId/export.xlsx', requireTeacher, async (req, res, next) => {
+    try {
+      const rows = sessions.getExportRows(req.params.sessionId);
+      const filePath = path.join(runtimeConfig.exportDir, `session-${req.params.sessionId}.xlsx`);
+      await writeResultsWorkbook({ filePath, ...rows });
+      res.download(filePath);
+    } catch (error) {
+      next(error);
+    }
   });
 
   router.post('/student/join', (req, res) => {

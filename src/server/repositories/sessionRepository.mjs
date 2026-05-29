@@ -152,6 +152,52 @@ export function createSessionRepository(db) {
       );
       return { id, sessionStudentId, eventType };
     },
+    getExportRows(sessionId) {
+      const summaryRows = db
+        .prepare(`
+          SELECT ss.student_id AS studentId, ss.full_name AS fullName, ec.code AS examCode,
+                 a.score, a.correct_count AS correctCount, a.total_questions AS totalQuestions,
+                 COUNT(ve.id) AS violationCount, a.status, a.submitted_at AS submittedAt
+          FROM session_students ss
+          JOIN attempts a ON a.session_student_id = ss.id
+          LEFT JOIN exam_codes ec ON ec.id = ss.exam_code_id
+          LEFT JOIN violation_events ve ON ve.session_student_id = ss.id
+          WHERE ss.session_id = ?
+          GROUP BY ss.id
+          ORDER BY ss.student_id ASC
+        `)
+        .all(sessionId);
+      const detailRows = db
+        .prepare(`
+          SELECT ss.student_id AS studentId, ss.full_name AS fullName, ec.code AS examCode,
+                 eci.display_order AS displayOrder, eci.question_id AS questionId,
+                 aa.selected_label AS studentAnswer,
+                 qo.label AS correctAnswer,
+                 CASE WHEN aa.selected_option_id = qo.id THEN 1 ELSE 0 END AS isCorrect
+          FROM session_students ss
+          JOIN attempts a ON a.session_student_id = ss.id
+          JOIN exam_codes ec ON ec.id = ss.exam_code_id
+          JOIN exam_code_items eci ON eci.exam_code_id = ec.id
+          JOIN question_options qo ON qo.question_id = eci.question_id AND qo.is_correct = 1
+          LEFT JOIN attempt_answers aa ON aa.attempt_id = a.id AND aa.exam_code_item_id = eci.id
+          WHERE ss.session_id = ?
+          ORDER BY ss.student_id ASC, eci.display_order ASC
+        `)
+        .all(sessionId);
+      const violationRows = db
+        .prepare(`
+          SELECT ss.student_id AS studentId, ss.full_name AS fullName, ve.event_type AS eventType,
+                 ve.occurred_at AS occurredAt, ve.metadata_json AS notes
+          FROM violation_events ve
+          JOIN session_students ss ON ss.id = ve.session_student_id
+          WHERE ss.session_id = ?
+          ORDER BY ss.student_id ASC, ve.occurred_at ASC
+        `)
+        .all(sessionId)
+        .map((row, index) => ({ ...row, cumulativeCount: index + 1 }));
+
+      return { summaryRows, detailRows, violationRows };
+    },
     transaction(callback) {
       return transaction(db, callback);
     }
