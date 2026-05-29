@@ -10,7 +10,7 @@ import { createExamRepository } from '../repositories/examRepository.mjs';
 import { createSessionRepository } from '../repositories/sessionRepository.mjs';
 import { readQuestionRowsFromWorkbook, validateQuestionRows } from '../services/excelImportService.mjs';
 import { createSessionService } from '../services/sessionService.mjs';
-import { positiveInteger, requiredText } from '../services/validation.mjs';
+import { optionLabel, positiveInteger, requiredText } from '../services/validation.mjs';
 
 function createUpload(runtimeConfig) {
   const importTmpDir = path.join(runtimeConfig.dataDir, 'tmp-imports');
@@ -53,6 +53,10 @@ export function createRoutes(db, runtimeConfig = config) {
     );
   });
 
+  router.get('/courses', requireTeacher, (req, res) => {
+    res.json({ items: catalog.listCourses(requiredText(req.query.semesterId, 'semesterId')) });
+  });
+
   router.post('/classes', requireTeacher, (req, res) => {
     res.status(201).json(
       catalog.createClass({
@@ -60,6 +64,10 @@ export function createRoutes(db, runtimeConfig = config) {
         name: requiredText(req.body.name, 'name')
       })
     );
+  });
+
+  router.get('/classes', requireTeacher, (req, res) => {
+    res.json({ items: catalog.listClasses(requiredText(req.query.courseId, 'courseId')) });
   });
 
   router.post('/exams', requireTeacher, (req, res) => {
@@ -72,6 +80,28 @@ export function createRoutes(db, runtimeConfig = config) {
     );
   });
 
+  router.get('/exams', requireTeacher, (req, res) => {
+    res.json({ items: exams.listExams(requiredText(req.query.classId, 'classId')) });
+  });
+
+  router.post('/exams/:examId/questions', requireTeacher, (req, res) => {
+    res.status(201).json(
+      exams.addQuestion({
+        examId: req.params.examId,
+        questionText: requiredText(req.body.questionText, 'questionText'),
+        position: positiveInteger(req.body.position, 'position'),
+        options: {
+          A: requiredText(req.body.options?.A, 'option A'),
+          B: requiredText(req.body.options?.B, 'option B'),
+          C: requiredText(req.body.options?.C, 'option C'),
+          D: requiredText(req.body.options?.D, 'option D')
+        },
+        correctLabel: optionLabel(req.body.correctLabel, 'correctLabel'),
+        imageId: req.body.imageId || null
+      })
+    );
+  });
+
   router.post('/sessions', requireTeacher, (req, res) => {
     res.status(201).json(
       sessionService.createSessionWithCodes({
@@ -80,6 +110,22 @@ export function createRoutes(db, runtimeConfig = config) {
         codeCount: positiveInteger(req.body.codeCount, 'codeCount')
       })
     );
+  });
+
+  router.get('/sessions/:sessionId/students', requireTeacher, (req, res) => {
+    res.json({ items: sessions.listStudents(req.params.sessionId) });
+  });
+
+  router.post('/sessions/:sessionId/auto-assign', requireTeacher, (req, res) => {
+    res.json({ items: sessionService.autoAssignExamCodes(req.params.sessionId) });
+  });
+
+  router.post('/sessions/:sessionId/start', requireTeacher, (req, res) => {
+    res.json(sessionService.startSession(req.params.sessionId));
+  });
+
+  router.post('/sessions/:sessionId/end', requireTeacher, (req, res) => {
+    res.json(sessionService.endSession(req.params.sessionId));
   });
 
   router.post('/student/join', (req, res) => {

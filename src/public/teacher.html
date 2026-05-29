@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Giang vien - Exam Management</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section id="loginPanel" class="login-panel">
+        <div>
+          <p class="eyebrow">Exam Management</p>
+          <h1>Phong thi cua giang vien</h1>
+        </div>
+        <label>Mat khau giang vien <input id="passwordInput" type="password" autocomplete="current-password"></label>
+        <button id="loginButton" type="button">Dang nhap</button>
+        <p id="loginError" class="error" role="alert"></p>
+      </section>
+
+      <section id="teacherApp" class="hidden">
+        <header class="toolbar">
+          <div>
+            <p class="eyebrow">Bang dieu khien</p>
+            <h1>Quan ly phong thi</h1>
+          </div>
+          <div class="toolbar-actions">
+            <button id="refreshButton" type="button" class="secondary">Lam moi</button>
+          </div>
+        </header>
+
+        <div class="grid">
+          <section class="panel">
+            <div class="panel-title">
+              <h2>Hoc phan</h2>
+              <span id="catalogStatus" class="status"></span>
+            </div>
+            <label>Hoc ky <select id="semesterSelect"></select></label>
+            <div class="inline">
+              <label>Ten hoc ky <input id="semesterName" placeholder="2026 Spring"></label>
+              <button id="createSemester" type="button">Tao</button>
+            </div>
+            <label>Hoc phan <select id="courseSelect"></select></label>
+            <label>Ma hoc phan <input id="courseCode" placeholder="EDU101"></label>
+            <div class="inline">
+              <label>Ten hoc phan <input id="courseName" placeholder="Danh gia giao duc"></label>
+              <button id="createCourse" type="button">Tao</button>
+            </div>
+            <label>Lop <select id="classSelect"></select></label>
+            <div class="inline">
+              <label>Ten lop <input id="className" placeholder="K1"></label>
+              <button id="createClass" type="button">Tao</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h2>Bai thi</h2>
+              <span id="examStatus" class="status"></span>
+            </div>
+            <label>Bai thi <select id="examSelect"></select></label>
+            <label>Tieu de <input id="examTitle" placeholder="Quiz 1"></label>
+            <div class="inline">
+              <label>Thoi gian <input id="examDuration" type="number" min="1" value="45"></label>
+              <button id="createExam" type="button">Tao</button>
+            </div>
+            <label>Cau hoi <textarea id="questionText"></textarea></label>
+            <div class="answer-grid">
+              <label>A <input id="optA"></label>
+              <label>B <input id="optB"></label>
+              <label>C <input id="optC"></label>
+              <label>D <input id="optD"></label>
+            </div>
+            <div class="inline compact">
+              <label>Dap an <select id="correctLabel"><option>A</option><option>B</option><option>C</option><option>D</option></select></label>
+              <button id="addQuestion" type="button">Them cau</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h2>Phong thi</h2>
+              <span id="sessionStatus" class="status"></span>
+            </div>
+            <div class="inline compact">
+              <label>So ma de <input id="codeCount" type="number" min="1" value="2"></label>
+              <button id="createSession" type="button">Tao phong</button>
+            </div>
+            <dl class="room-details">
+              <div><dt>Ma phong</dt><dd id="roomCode">-</dd></div>
+              <div><dt>Link sinh vien</dt><dd><a id="studentUrl" href="/student.html">/student.html</a></dd></div>
+            </dl>
+            <div class="session-actions">
+              <button id="autoAssign" type="button" class="secondary">Chia ma de</button>
+              <button id="startSession" type="button" class="success">Bat dau</button>
+              <button id="endSession" type="button" class="danger">Ket thuc</button>
+            </div>
+          </section>
+        </div>
+
+        <section class="table-section">
+          <div class="panel-title">
+            <h2>Sinh vien trong phong</h2>
+            <span id="studentsStatus" class="status"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ma SV</th>
+                  <th>Ho ten</th>
+                  <th>Ma de</th>
+                  <th>Trang thai</th>
+                  <th>Canh bao</th>
+                </tr>
+              </thead>
+              <tbody id="studentsTable"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script type="module" src="/assets/teacher/teacher.js"></script>
+  </body>
+</html>
