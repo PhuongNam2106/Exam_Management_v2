@@ -8,35 +8,49 @@ import { createDatabase } from './db/database.mjs';
 import { createRoutes } from './http/routes.mjs';
 import { createStaticMiddleware } from './http/static.mjs';
 
-fs.mkdirSync(config.dataDir, { recursive: true });
-fs.mkdirSync(config.uploadDir, { recursive: true });
-fs.mkdirSync(config.exportDir, { recursive: true });
+export function createApp(overrides = {}) {
+  const runtimeConfig = { ...config, ...overrides };
+  fs.mkdirSync(runtimeConfig.dataDir, { recursive: true });
+  fs.mkdirSync(runtimeConfig.uploadDir, { recursive: true });
+  fs.mkdirSync(runtimeConfig.exportDir, { recursive: true });
 
-const db = createDatabase(config.databasePath);
-const app = express();
-app.locals.db = db;
-app.use(express.json({ limit: '20mb' }));
-app.use(createStaticMiddleware());
+  const db = createDatabase(runtimeConfig.databasePath);
+  const app = express();
+  app.locals.db = db;
+  app.locals.config = runtimeConfig;
+  app.use(express.json({ limit: '20mb' }));
+  app.use(createStaticMiddleware(runtimeConfig));
 
-app.get('/api/health', (req, res) => {
-  const schemaVersion = db.prepare("SELECT value FROM settings WHERE key = 'schema_version'").get().value;
-  res.json({ ok: true, port: config.port, schemaVersion, lanUrls: getLanAddresses() });
-});
+  app.get('/api/health', (req, res) => {
+    const schemaVersion = db.prepare("SELECT value FROM settings WHERE key = 'schema_version'").get().value;
+    res.json({ ok: true, port: runtimeConfig.port, schemaVersion, lanUrls: getLanAddresses(runtimeConfig.port) });
+  });
 
-app.use('/api', createRoutes(db));
-app.use((error, req, res, next) => {
-  console.error(error);
-  res.status(400).json({ error: error.message || 'Request failed' });
-});
+  app.use('/api', createRoutes(db, runtimeConfig));
+  app.use((error, req, res, next) => {
+    console.error(error);
+    res.status(400).json({ error: error.message || 'Request failed' });
+  });
 
-const server = http.createServer(app);
+  return app;
+}
+
+export function createServer(overrides = {}) {
+  const app = createApp(overrides);
+  return { app, server: http.createServer(app) };
+}
+
 const isDirectExecution =
   Boolean(process.argv[1]) && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
+let app;
+let server;
+
 if (isDirectExecution) {
-  server.listen(config.port, '0.0.0.0', () => {
-    console.log(`Exam server running at http://localhost:${config.port}`);
-    for (const url of getLanAddresses()) console.log(`LAN URL: ${url}`);
+  ({ app, server } = createServer());
+  server.listen(app.locals.config.port, '0.0.0.0', () => {
+    console.log(`Exam server running at http://localhost:${app.locals.config.port}`);
+    for (const url of getLanAddresses(app.locals.config.port)) console.log(`LAN URL: ${url}`);
   });
 }
 

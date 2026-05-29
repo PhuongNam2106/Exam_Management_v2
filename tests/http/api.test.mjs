@@ -1,7 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import request from 'supertest';
-import { app } from '../../src/server/app.mjs';
+import { createApp } from '../../src/server/app.mjs';
+
+function createTestApp() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exam-api-'));
+  return createApp({
+    dataDir: dir,
+    uploadDir: path.join(dir, 'uploads'),
+    exportDir: path.join(dir, 'exports'),
+    databasePath: path.join(dir, 'test.sqlite')
+  });
+}
+
+const app = createTestApp();
 
 test('health endpoint returns schema version', async () => {
   const res = await request(app).get('/api/health').expect(200);

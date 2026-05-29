@@ -32,12 +32,12 @@ export const config = {
   teacherPassword: process.env.TEACHER_PASSWORD || 'admin123'
 };
 
-export function getLanAddresses() {
+export function getLanAddresses(port = config.port) {
   const addresses = [];
   for (const entries of Object.values(os.networkInterfaces())) {
     for (const entry of entries || []) {
       if (entry.family === 'IPv4' && !entry.internal) {
-        addresses.push(`http://${entry.address}:${config.port}`);
+        addresses.push(`http://${entry.address}:${port}`);
       }
     }
   }

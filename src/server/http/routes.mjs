@@ -1,18 +1,30 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import express from 'express';
+import multer from 'multer';
 import { requireTeacher } from './auth.mjs';
+import { config } from '../config.mjs';
 import { issueTeacherToken, verifyTeacherPassword } from '../services/authService.mjs';
 import { createCatalogRepository } from '../repositories/catalogRepository.mjs';
 import { createExamRepository } from '../repositories/examRepository.mjs';
 import { createSessionRepository } from '../repositories/sessionRepository.mjs';
+import { readQuestionRowsFromWorkbook, validateQuestionRows } from '../services/excelImportService.mjs';
 import { createSessionService } from '../services/sessionService.mjs';
 import { positiveInteger, requiredText } from '../services/validation.mjs';
 
-export function createRoutes(db) {
+function createUpload(runtimeConfig) {
+  const importTmpDir = path.join(runtimeConfig.dataDir, 'tmp-imports');
+  fs.mkdirSync(importTmpDir, { recursive: true });
+  return multer({ dest: importTmpDir });
+}
+
+export function createRoutes(db, runtimeConfig = config) {
   const router = express.Router();
   const catalog = createCatalogRepository(db);
   const exams = createExamRepository(db);
   const sessions = createSessionRepository(db);
   const sessionService = createSessionService({ exams, sessions });
+  const upload = createUpload(runtimeConfig);
 
   router.post('/teacher/login', (req, res) => {
     if (!verifyTeacherPassword(req.body.password)) {
@@ -69,6 +81,59 @@ export function createRoutes(db) {
       })
     );
   });
+
+  router.post(
+    '/exams/:examId/import-excel',
+    requireTeacher,
+    upload.fields([
+      { name: 'excel', maxCount: 1 },
+      { name: 'images', maxCount: 100 }
+    ]),
+    async (req, res, next) => {
+      try {
+        const excelFile = req.files?.excel?.[0];
+        if (!excelFile) throw new Error('excel file is required');
+
+        const imageFiles = req.files?.images || [];
+        const imageNames = new Set(imageFiles.map((file) => file.originalname));
+        const rows = await readQuestionRowsFromWorkbook(excelFile.path);
+        const validation = validateQuestionRows(rows, imageNames);
+
+        if (validation.errors.length) {
+          res.status(400).json({ errors: validation.errors });
+          return;
+        }
+
+        const saved = [];
+        for (const [index, question] of validation.questions.entries()) {
+          const imageFile = imageFiles.find((file) => file.originalname === question.imageName);
+          const image = imageFile
+            ? exams.addImage({
+                examId: req.params.examId,
+                originalName: imageFile.originalname,
+                storedPath: imageFile.path,
+                mimeType: imageFile.mimetype
+              })
+            : null;
+
+          saved.push(
+            exams.addQuestion({
+              examId: req.params.examId,
+              questionText: question.questionText,
+              position: index + 1,
+              options: question.options,
+              correctLabel: question.correctLabel,
+              imageId: image?.id || null
+            })
+          );
+        }
+
+        res.status(201).json({ imported: saved.length });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
 
   return router;
 }
