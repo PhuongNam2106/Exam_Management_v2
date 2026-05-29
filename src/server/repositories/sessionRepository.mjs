@@ -82,6 +82,48 @@ export function createSessionRepository(db) {
       db.prepare('UPDATE session_students SET exam_code_id = ? WHERE id = ?').run(examCodeId, sessionStudentId);
       return db.prepare('SELECT id, exam_code_id AS examCodeId FROM session_students WHERE id = ?').get(sessionStudentId);
     },
+    getAttemptByStudent(sessionStudentId) {
+      return db
+        .prepare('SELECT id, session_student_id AS sessionStudentId, status, score, correct_count AS correctCount, total_questions AS totalQuestions FROM attempts WHERE session_student_id = ?')
+        .get(sessionStudentId);
+    },
+    getCodeItemsForStudent(sessionStudentId) {
+      return db
+        .prepare(`
+          SELECT eci.id AS itemId, eci.display_order AS displayOrder,
+                 eci.option_a_id AS A, eci.option_b_id AS B, eci.option_c_id AS C, eci.option_d_id AS D,
+                 qo.id AS correctOptionId
+          FROM session_students ss
+          JOIN exam_code_items eci ON eci.exam_code_id = ss.exam_code_id
+          JOIN question_options qo ON qo.question_id = eci.question_id AND qo.is_correct = 1
+          WHERE ss.id = ?
+          ORDER BY eci.display_order ASC
+        `)
+        .all(sessionStudentId);
+    },
+    saveAnswer({ attemptId, examCodeItemId, selectedLabel, selectedOptionId }) {
+      const id = createId('ans');
+      db.prepare(`
+        INSERT INTO attempt_answers(id, attempt_id, exam_code_item_id, selected_label, selected_option_id, answered_at)
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(attempt_id, exam_code_item_id) DO UPDATE SET
+          selected_label = excluded.selected_label,
+          selected_option_id = excluded.selected_option_id,
+          answered_at = CURRENT_TIMESTAMP
+      `).run(id, attemptId, examCodeItemId, selectedLabel, selectedOptionId);
+    },
+    listAnswers(attemptId) {
+      return db
+        .prepare('SELECT exam_code_item_id AS itemId, selected_label AS selectedLabel, selected_option_id AS selectedOptionId FROM attempt_answers WHERE attempt_id = ?')
+        .all(attemptId);
+    },
+    submitAttempt({ attemptId, submittedAt, score, correctCount, totalQuestions }) {
+      db.prepare(`
+        UPDATE attempts
+        SET status = 'submitted', submitted_at = ?, score = ?, correct_count = ?, total_questions = ?
+        WHERE id = ?
+      `).run(submittedAt, score, correctCount, totalQuestions, attemptId);
+    },
     markRunning({ sessionId, startedAt, endsAt }) {
       db.prepare("UPDATE exam_sessions SET status = 'running', started_at = ?, ends_at = ? WHERE id = ?").run(
         startedAt,

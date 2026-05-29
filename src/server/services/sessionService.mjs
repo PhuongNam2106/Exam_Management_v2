@@ -1,6 +1,7 @@
 import { createRoomCode } from '../utils/ids.mjs';
 import { addMinutesIso, nowIso } from '../utils/time.mjs';
 import { generateCodeNames, generateExamCodeMappings } from './examCodeService.mjs';
+import { gradeAttempt } from './gradingService.mjs';
 
 export function createSessionService({ exams, sessions }) {
   return {
@@ -53,6 +54,41 @@ export function createSessionService({ exams, sessions }) {
     endSession(sessionId, endedAt = nowIso()) {
       sessions.markEnded({ sessionId, endedAt });
       return { id: sessionId, status: 'ended', endedAt };
+    },
+    saveAnswer({ sessionStudentId, examCodeItemId, selectedLabel }) {
+      const attempt = sessions.getAttemptByStudent(sessionStudentId);
+      if (!attempt) throw new Error('Attempt not found');
+
+      const items = sessions.getCodeItemsForStudent(sessionStudentId);
+      const item = items.find((entry) => entry.itemId === examCodeItemId);
+      if (!item) throw new Error('Question item is not assigned to this student');
+
+      const selectedOptionId = item[selectedLabel];
+      if (!selectedOptionId) throw new Error('selectedLabel must be A, B, C, or D');
+
+      sessions.saveAnswer({ attemptId: attempt.id, examCodeItemId, selectedLabel, selectedOptionId });
+      return { saved: true };
+    },
+    submitStudent({ sessionStudentId, submittedAt = nowIso() }) {
+      const attempt = sessions.getAttemptByStudent(sessionStudentId);
+      if (!attempt) throw new Error('Attempt not found');
+
+      const rows = sessions.getCodeItemsForStudent(sessionStudentId);
+      const items = rows.map((row) => ({
+        itemId: row.itemId,
+        displayed: { A: row.A, B: row.B, C: row.C, D: row.D },
+        correctOptionId: row.correctOptionId
+      }));
+      const answers = sessions.listAnswers(attempt.id);
+      const grade = gradeAttempt({ items, answers });
+      sessions.submitAttempt({
+        attemptId: attempt.id,
+        submittedAt,
+        score: grade.score,
+        correctCount: grade.correctCount,
+        totalQuestions: grade.totalQuestions
+      });
+      return grade;
     }
   };
 }

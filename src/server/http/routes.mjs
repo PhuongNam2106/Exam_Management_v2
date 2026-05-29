@@ -82,6 +82,39 @@ export function createRoutes(db, runtimeConfig = config) {
     );
   });
 
+  router.post('/student/join', (req, res) => {
+    const session = sessions.getSessionByRoomCode(requiredText(req.body.roomCode, 'roomCode'));
+    if (!session) {
+      res.status(404).json({ error: 'Room not found' });
+      return;
+    }
+
+    const student = sessions.joinStudent({
+      sessionId: session.id,
+      studentId: requiredText(req.body.studentId, 'studentId'),
+      fullName: requiredText(req.body.fullName, 'fullName')
+    });
+    res.status(201).json({ session, student });
+  });
+
+  router.post('/student/answer', (req, res) => {
+    res.json(
+      sessionService.saveAnswer({
+        sessionStudentId: requiredText(req.body.sessionStudentId, 'sessionStudentId'),
+        examCodeItemId: requiredText(req.body.examCodeItemId, 'examCodeItemId'),
+        selectedLabel: requiredText(req.body.selectedLabel, 'selectedLabel').toUpperCase()
+      })
+    );
+  });
+
+  router.post('/student/submit', (req, res) => {
+    res.json(
+      sessionService.submitStudent({
+        sessionStudentId: requiredText(req.body.sessionStudentId, 'sessionStudentId')
+      })
+    );
+  });
+
   router.post(
     '/exams/:examId/import-excel',
     requireTeacher,
